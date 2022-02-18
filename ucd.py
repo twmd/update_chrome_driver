@@ -4,10 +4,15 @@ import requests
 import re
 from urllib import request
 import zipfile
+import sys
 
+#TODO: Сделать проверки на наличие директорий
+#TODO: Добавить логирование
+#TODO: Вынести директорию в конфиг
 DRIVER_FOLDER = r'd:\_tmp\ucd'
 SITE_URL = 'https://chromedriver.chromium.org/downloads'
 DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'download')
+
 
 def get_current_drivers(folder: str) -> list:
     '''
@@ -35,38 +40,63 @@ def get_new_drivers_list(url: str, driver_ver: list) -> list:
     :return: список с сайтами для загрузки
     '''
     url_list = []
-    page = requests.get(url)
+    try:
+        page = requests.get(url)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
     soup = bs(page.text, features='html.parser')
     search_string = 'chromedriver.storage.googleapis.com'
     for data in soup.find_all(href=True):
         link = data['href']
         # Выбираем только ссылки с загрузкой и убираем note.txt
         if search_string in link and 'notes.txt' not in link:
+            # Берем версию драйвера из URL
             ver_url = link.split('=')[-1].split('.')[0]
             if ver_url not in driver_ver:
                 url_list.append(link)
     return url_list
 
 
-def download_drivers(url_list):
+def download_drivers(url_list, download_folder):
+    '''
+    Загрузка драйверов
+    :param url_list:
+    :return:
+    '''
     driver_dict = {}
     driver_name = r'chromedriver_win32.zip'
-    #Формируем словарь версия драйвер:адресс для скачивания
+    # Формируем словарь версия драйвер:адресс для скачивания
     for url in url_list:
-        #Получаем версию из url
+        # Получаем версию из url
         version = url.split('path=')[1].split('.')[0]
         url = url.replace('index.html?path=', '')
-        driver_dict.update({version:url+driver_name})
-    #Сохраняем фаил
+        driver_dict.update({version: url + driver_name})
+    # Сохраняем фаил
     for ver, url in driver_dict.items():
-        tmp_file_name = ver+ '_'+ url.split('/')[-1]
-        zip_file_name = os.path.join(DOWNLOAD_FOLDER, tmp_file_name)
-        request.urlretrieve(url, zip_file_name)
+        tmp_file_name = ver + '_' + url.split('/')[-1]
+        #Задаем имя файла и катало гля загрузки в формате ver_...
+        if not os.path.exists(download_folder):
+            os.makedirs(download_folder)
+        zip_file_name = os.path.join(download_folder, tmp_file_name)
+        try:
+            request.urlretrieve(url, zip_file_name)
+        except Exception as e:
+            print(e)
 
 def uzip_rename_move(src_folder, dst_folder):
+    '''
+    Распаковывает архив, и переименовывает фаил с перемещением
+    :param src_folder: Директория для загрузки
+    :param dst_folder: Директория куда складывать драйвера
+    :return:
+    '''
+    #Проверяем файлы в каталоге загрузки, ищем .zip
     for file in os.listdir(src_folder):
         if file.endswith('.zip'):
+            #Получаем версию
             ver = file.split('_')[0]
+            #Формируем имя файла и полный путь
             driver_name = 'chromedriver' + ver + '.exe'
             full_path = os.path.join(src_folder, file)
             with zipfile.ZipFile(full_path, 'r') as zf:
@@ -74,10 +104,14 @@ def uzip_rename_move(src_folder, dst_folder):
             os.remove(full_path)
             for file_exe in os.listdir(src_folder):
                 if file_exe.endswith('exe'):
-                    os.rename(os.path.join(src_folder, file_exe), os.path.join(dst_folder, driver_name))
+                    try:
+                        os.rename(os.path.join(src_folder, file_exe), os.path.join(dst_folder, driver_name))
+                    except Exception as e:
+                        print(e)
 
 if __name__ == '__main__':
     driver_ver_list = get_current_drivers(DRIVER_FOLDER)
     url_list = get_new_drivers_list(SITE_URL, driver_ver_list)
-    download_drivers(url_list)
-    uzip_rename_move(DOWNLOAD_FOLDER, DRIVER_FOLDER)
+    if url_list:
+        download_drivers(url_list, DOWNLOAD_FOLDER)
+        uzip_rename_move(DOWNLOAD_FOLDER, DRIVER_FOLDER)
