@@ -5,13 +5,23 @@ import re
 from urllib import request
 import zipfile
 import sys
+import configparser
+import ast
 
-#TODO: Сделать проверки на наличие директорий
 #TODO: Добавить логирование
-#TODO: Вынести директорию в конфиг
-DRIVER_FOLDER = r'd:\_tmp\ucd'
 SITE_URL = 'https://chromedriver.chromium.org/downloads'
 DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'download')
+
+def get_config(config_path: str, section: str) -> dict:
+    """
+    Получаем конфиг
+    :param config_path: путь до файла конфигурации
+    :param section: имя секции
+    :return: возвращает словарь из options указанной секции
+    """
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    return dict(config.items(section))
 
 
 def get_current_drivers(folder: str) -> list:
@@ -110,6 +120,8 @@ def uzip_rename_move(src_folder, dst_folder):
                         print(e)
 
 if __name__ == '__main__':
+    config = get_config(os.path.join(os.getcwd(), 'setting.ini'), 'FOLDER')
+    DRIVER_FOLDER = config['driver_folder']
     driver_ver_list = get_current_drivers(DRIVER_FOLDER)
     url_list = get_new_drivers_list(SITE_URL, driver_ver_list)
     if url_list:
