@@ -6,19 +6,22 @@ from urllib import request
 import zipfile
 import sys
 import configparser
-import ast
 import logging
 import logging.config
 
 SITE_URL = 'https://chromedriver.chromium.org/downloads'
 DOWNLOAD_FOLDER = os.path.join(os.getcwd(), 'download')
 
+
 def get_logger():
     # Логер
-    logging.config.fileConfig(os.path.join(os.getcwd(), 'logger.ini'), disable_existing_loggers = False)
+    logging.config.fileConfig(os.path.join(os.getcwd(), 'logger.ini'), disable_existing_loggers=False)
     logger = logging.getLogger('plogger')
     return logger
+
+
 logger = get_logger()
+
 
 def get_config(config_path: str, section: str) -> dict:
     """
@@ -34,15 +37,15 @@ def get_config(config_path: str, section: str) -> dict:
 
 
 def get_current_drivers(folder: str) -> list:
-    '''
+    """
     Ищет файлы драйвера в указанной директории
     :param folder: Путь к директории с драйверами
     :return: версий драйверов
-    '''
+    """
     driver_ver = []
     re_dig = re.compile(r"\d+")
-    if os.path.exists(DRIVER_FOLDER):
-        for file in os.listdir(DRIVER_FOLDER):
+    if os.path.exists(folder):
+        for file in os.listdir(folder):
             if file.startswith('chromedriver'):
                 ver = re.search(re_dig, file)
                 if ver:
@@ -53,11 +56,11 @@ def get_current_drivers(folder: str) -> list:
 
 
 def get_new_drivers_list(url: str, driver_ver: list) -> list:
-    '''
+    """
     Парсим сайт с загрузками выбираем ссылки на страницу загрузки
     :param url: URL
     :return: список с сайтами для загрузки
-    '''
+    """
     logger.info('get_new_drivers_list запустился')
     url_list = []
     try:
@@ -80,11 +83,12 @@ def get_new_drivers_list(url: str, driver_ver: list) -> list:
 
 
 def download_drivers(url_list, download_folder):
-    '''
+    """
     Загрузка драйверов
+    :param download_folder:
     :param url_list:
     :return:
-    '''
+    """
     logger.info('download_drivers запустился')
     driver_dict = {}
     driver_name = r'chromedriver_win32.zip'
@@ -97,7 +101,7 @@ def download_drivers(url_list, download_folder):
     # Сохраняем фаил
     for ver, url in driver_dict.items():
         tmp_file_name = ver + '_' + url.split('/')[-1]
-        #Задаем имя файла и катало гля загрузки в формате ver_...
+        # Задаем имя файла и катало гля загрузки в формате ver_...
         if not os.path.exists(download_folder):
             os.makedirs(download_folder)
         zip_file_name = os.path.join(download_folder, tmp_file_name)
@@ -106,20 +110,22 @@ def download_drivers(url_list, download_folder):
         except Exception as e:
             logger.exception('Ошибка загрузки драйверов')
     logger.info('download_drivers завершил работу')
+
+
 def uzip_rename_move(src_folder, dst_folder):
-    '''
+    """
     Распаковывает архив, и переименовывает фаил с перемещением
     :param src_folder: Директория для загрузки
     :param dst_folder: Директория куда складывать драйвера
     :return:
-    '''
+    """
     logger.info('uzip_rename_move запустился')
-    #Проверяем файлы в каталоге загрузки, ищем .zip
+    # Проверяем файлы в каталоге загрузки, ищем .zip
     for file in os.listdir(src_folder):
         if file.endswith('.zip'):
-            #Получаем версию
+            # Получаем версию
             ver = file.split('_')[0]
-            #Формируем имя файла и полный путь
+            # Формируем имя файла и полный путь
             driver_name = 'chromedriver' + ver + '.exe'
             full_path = os.path.join(src_folder, file)
             with zipfile.ZipFile(full_path, 'r') as zf:
@@ -132,6 +138,8 @@ def uzip_rename_move(src_folder, dst_folder):
                     except Exception as e:
                         logger.exception('Ошибка перемещения файлов')
     logger.info('uzip_rename_move завершил работу')
+
+
 if __name__ == '__main__':
     logger.info('Скрипт начал работу')
     config = get_config(os.path.join(os.getcwd(), 'setting.ini'), 'FOLDER')
