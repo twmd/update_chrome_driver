@@ -7,6 +7,7 @@ import zipfile
 import sys
 import configparser
 import ast
+import shutil
 
 #TODO: Добавить логирование
 SITE_URL = 'https://chromedriver.chromium.org/downloads'
@@ -115,7 +116,8 @@ def uzip_rename_move(src_folder, dst_folder):
             for file_exe in os.listdir(src_folder):
                 if file_exe.endswith('exe'):
                     try:
-                        os.rename(os.path.join(src_folder, file_exe), os.path.join(dst_folder, driver_name))
+                        shutil.move(os.path.join(src_folder, file_exe), os.path.join(dst_folder, driver_name))
+                        # os.rename(os.path.join(src_folder, file_exe), os.path.join(dst_folder, driver_name))
                     except Exception as e:
                         print(e)
 
