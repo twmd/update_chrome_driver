@@ -8,6 +8,7 @@ import sys
 import configparser
 import ast
 import shutil
+import time
 
 #TODO: Добавить логирование
 SITE_URL = 'https://chromedriver.chromium.org/downloads'
@@ -112,6 +113,7 @@ def uzip_rename_move(src_folder, dst_folder):
             full_path = os.path.join(src_folder, file)
             with zipfile.ZipFile(full_path, 'r') as zf:
                 zf.extractall(DOWNLOAD_FOLDER)
+            time.sleep(2)
             os.remove(full_path)
             for file_exe in os.listdir(src_folder):
                 if file_exe.endswith('exe'):
